@@ -10,7 +10,6 @@ const int AMOUNT_OF_FILES = 13;
 Use reduce() to open each of the 13 files reading one line at a time for each file, and writing the lowest sort order
 word from each file, and then reading the next word from that file. In other words, a 13 → 1 merge sort.*/
 
-
 int compareStringByThirdCharacter( const void *str1, const void *str2 )
 {
     char *const *pp1 = str1;
@@ -38,7 +37,7 @@ void map2(){
         char sortedSubWordFileName[BUFFERSIZE];
         //Set filenames to be based on the amount of letters in the word
         snprintf(sortedSubWordFileName, BUFFERSIZE, "./sortedmap2/%d.txt", fileNumber);
-        sortedSubWordFile[i] = fopen(sortedSubWordFileName, "a");
+        sortedSubWordFile[i] = fopen(sortedSubWordFileName, "w");
         sortStringBuffer[i] = malloc(sizeof(char *) * wordsInFileCount);
         wordCount[i] = 0;
         fileNumber++;
@@ -102,19 +101,26 @@ void map2(){
     }
 
 
-
-    // pid_t pid = getpid();
-    for(int i = 0; i <= AMOUNT_OF_FORKS; i++){
+    //TODO: Try and get 3 words placed in
+    pid_t pid = getpid();
+    for(int i = 0; i < AMOUNT_OF_FORKS; i++){
         //We are the child process
-        // if(pid == 0){
-            //Adding +2 here to account for the word lengths, sort(3) will access file "./map2/3.txt"
-            sort(sortedSubWordFile[i], sortStringBuffer[i],wordCount[i], i+3);
-        // }else{
-        //     //We should be the parent process, make another fork!
-        //     //printf("Creating a fork!\n");
-        //     pid = fork();
-        //     wait(0);
-        // }
+        if(pid == 0){
+            //Apply q sort to array being passed in
+            qsort(sortStringBuffer[i], wordCount[i], sizeof(char*), compareString);
+            //Fput the file 
+            for(int j = 0; j < wordCount[i]; j++){
+                printf("Printing: %s", sortStringBuffer[i][j]);
+                fputs(sortStringBuffer[i][j], sortedSubWordFile[i]);
+            }    
+        }else{
+   
+        
+            //We should be the parent process, make another fork!
+            //printf("Creating a fork!\n");
+            pid = fork();
+            wait(0);
+        }
     }
 
 
@@ -124,16 +130,55 @@ void map2(){
     }
 
     //Don't allow the main process to continue until we have no child processes running
-    //while (wait(NULL) != -1 || errno != ECHILD); 
+    while (wait(NULL) != -1 || errno != ECHILD); 
 
-
+  //reduce(wordCount, wordsInFileCount)
 
 }
 
 //Go through each file, grab the current index of that file and move to the merged array
 //Need to find the length of all the files
-void reduce(){ 
+
+void reduce(int wordCount[], int finalFileSize){ 
+    //Create a final file
+    FILE *reducedFile;
+    FILE *sortedSubWordFile[AMOUNT_OF_FILES];
+    int positionInFile[AMOUNT_OF_FILES] = {0};
+    int finishedFileCount = 0;
+
+     //Init file
+     reducedFile = fopen("./Task2Final.txt", "w");
+
     
+    //Open all files again
+    for(int i = 0; i < AMOUNT_OF_FILES; i++){
+        char sortedSubWordFileName[BUFFERSIZE];
+        snprintf(sortedSubWordFileName, BUFFERSIZE, "./sortedmap2/%d.txt", i+2);
+        sortedSubWordFile[i] = fopen(sortedSubWordFileName, "r");
+    }
+
+    //Go through file 1
+    //Are we at the end?
+    //If not then append the array with the current line
+    
+        for(int j = 0; j< AMOUNT_OF_FILES; j++){
+            //If we aren't at the end of the file
+            //Copy in line
+            //Iterate positionInFile[j]
+            //finishedFileCount = 0;
+
+            //If we are at the end of the file
+            //finishedFileCount++
+
+            //If finishedFileCount == AMOUNT_OF_FILES
+            //end
+        }
+    
+
+    //
+    
+
+     
 
 }
 
@@ -142,18 +187,7 @@ void singleThread(){
 
 }
 
-void sort(FILE *sortedSubWordFile, char** buffer, int sizeOfArray, int fileNumber){
-    //Apply q sort to array being passed in
-    qsort(buffer, sizeOfArray, sizeof(char*), compareString);
-    //Fput the file 
-        for(int i = 0; i < sizeOfArray; i++){
-        printf("Printing to %d: %s", fileNumber, buffer[i]);
-        printf("FILE: %p\n", sortedSubWordFile);
-        int result = fputs(buffer[i], sortedSubWordFile);
-        printf("FileNumber %d result is %d\n:", fileNumber, result);
-    }
 
-}
 
 //Only run printf statements if passing the -DVERBOSE flag when compiling
 #ifdef VERBOSE

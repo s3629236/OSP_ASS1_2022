@@ -15,6 +15,5 @@
 
 void map2();
 
-void sort(FILE *sortedSubWordFile, char** buffer, int sizeOfArray, int fileNumber);
 
 #endif
