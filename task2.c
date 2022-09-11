@@ -23,7 +23,6 @@ int compareStringByThirdCharacter( const void *str1, const void *str2 )
 void map2(){
 
     char** validWords = taskOneFilter("tester.txt", "CTask1.txt");
-    FILE *writeFile[AMOUNT_OF_FILES];
     FILE *sortedSubWordFile[AMOUNT_OF_FILES];
     int wordCount[AMOUNT_OF_FILES];
     
@@ -36,12 +35,9 @@ void map2(){
 
     //Initialising all files and buffers
     for(int i = 0; i < AMOUNT_OF_FILES; i++){
-        char subWordFileName[BUFFERSIZE];
         char sortedSubWordFileName[BUFFERSIZE];
         //Set filenames to be based on the amount of letters in the word
-        snprintf(subWordFileName, BUFFERSIZE, "./map2/%d.txt", fileNumber);
         snprintf(sortedSubWordFileName, BUFFERSIZE, "./sortedmap2/%d.txt", fileNumber);
-        writeFile[i] = fopen(subWordFileName, "w");
         sortedSubWordFile[i] = fopen(sortedSubWordFileName, "a");
         sortStringBuffer[i] = malloc(sizeof(char *) * wordsInFileCount);
         wordCount[i] = 0;
@@ -51,68 +47,54 @@ void map2(){
     for(int i = 0; i < wordsInFileCount; i++){
         switch(strlen(validWords[i])-1){
             case 3:
-                int result = fprintf(writeFile[0], "%s", validWords[i]);
-                printf("Threefile result is %d\n:", result);
                 sortStringBuffer[0][wordCount[0]] = validWords[i];
                 wordCount[0]++;
             break;
             case 4:
-                fprintf(writeFile[1], "%s", validWords[i]);
                 sortStringBuffer[1][wordCount[1]] = validWords[i];
                 wordCount[1]++;
             break;
             case 5:
-                fprintf(writeFile[2], "%s", validWords[i]);
                 sortStringBuffer[2][wordCount[2]] = validWords[i];
                 wordCount[2]++;
             break;
             case 6:
-                fprintf(writeFile[3], "%s", validWords[i]);
                 sortStringBuffer[3][wordCount[3]] = validWords[i];
                 wordCount[3]++;
             break;
             case 7:
-                fprintf(writeFile[4], "%s", validWords[i]);
                 sortStringBuffer[4][wordCount[4]] = validWords[i];
                 wordCount[4]++;
             break;
             case 8:
-                fprintf(writeFile[5], "%s", validWords[i]); 
                 sortStringBuffer[5][wordCount[5]] = validWords[i];
                 wordCount[5]++;
             break;
             case 9:
-                fprintf(writeFile[6], "%s", validWords[i]);
                 sortStringBuffer[6][wordCount[6]] = validWords[i];
                 wordCount[6]++;
             break;
             case 10:
-                fprintf(writeFile[7], "%s", validWords[i]);
                 sortStringBuffer[7][wordCount[7]] = validWords[i];
                 wordCount[7]++;
             break;
             case 11:
-                fprintf(writeFile[8], "%s", validWords[i]);
                 sortStringBuffer[8][wordCount[8]] = validWords[i];
                 wordCount[8]++;
             break;
             case 12:
-                fprintf(writeFile[9], "%s", validWords[i]);
                 sortStringBuffer[9][wordCount[9]] = validWords[i];
                 wordCount[9]++;
             break;
             case 13:
-                fprintf(writeFile[10], "%s", validWords[i]);
                 sortStringBuffer[10][wordCount[10]] = validWords[i];
                 wordCount[10]++;
             break;
             case 14:
-                fprintf(writeFile[11], "%s", validWords[i]);
                 sortStringBuffer[11][wordCount[11]] = validWords[i];
                 wordCount[11]++;
             break;
             case 15:
-                fprintf(writeFile[12], "%s", validWords[i]);
                 sortStringBuffer[12][wordCount[12]] = validWords[i];
                 wordCount[12]++;
             break;
@@ -120,10 +102,6 @@ void map2(){
     }
 
 
- //closing all files 
-    for(int i = 0; i < AMOUNT_OF_FILES; i++){
-        fclose(writeFile[i]);
-    }
 
     // pid_t pid = getpid();
     for(int i = 0; i <= AMOUNT_OF_FORKS; i++){
@@ -145,9 +123,8 @@ void map2(){
         fclose(sortedSubWordFile[i]);
     }
 
-
     //Don't allow the main process to continue until we have no child processes running
-    while (wait(NULL) != -1 || errno != ECHILD); 
+    //while (wait(NULL) != -1 || errno != ECHILD); 
 
 
 
@@ -155,7 +132,8 @@ void map2(){
 
 //Go through each file, grab the current index of that file and move to the merged array
 //Need to find the length of all the files
-void reduce(){
+void reduce(){ 
+    
 
 }
 
