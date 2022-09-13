@@ -4,20 +4,6 @@ const int AMOUNT_OF_FORKS = 13;
 const int BUFFERSIZE = 500;
 int lineCounts[20];
 const int AMOUNT_OF_FILES = 13;
-/*Task 2: Process based Solution
-
-
-Use reduce() to open each of the 13 files reading one line at a time for each file, and writing the lowest sort order
-word from each file, and then reading the next word from that file. In other words, a 13 → 1 merge sort.*/
-
-int compareStringByThirdCharacter( const void *str1, const void *str2 )
-{
-    char *const *pp1 = str1;
-    char *const *pp2 = str2;
-    return strcmp(*pp1, *pp2);
-}
-
-
 
 void map2(){
 
@@ -43,6 +29,7 @@ void map2(){
         fileNumber++;
     }
 
+    //Switching based on the size of the word, placing into a buffer along with a related array for keeping count of how many words are in that buffer
     for(int i = 0; i < wordsInFileCount; i++){
         switch(strlen(validWords[i])-1){
             case 3:
@@ -101,25 +88,17 @@ void map2(){
     }
 
 
-    //TODO: Try and get 3 words placed in
     pid_t pid = getpid();
     for(int i = 0; i < AMOUNT_OF_FORKS; i++){
-        //We are the child process
-        if(pid == 0){
+        //If we are the child process
+        if((pid = fork()) == 0){
             //Apply q sort to array being passed in
             qsort(sortStringBuffer[i], wordCount[i], sizeof(char*), compareString);
             //Fput the file 
             for(int j = 0; j < wordCount[i]; j++){
-                printf("Printing: %s", sortStringBuffer[i][j]);
                 fputs(sortStringBuffer[i][j], sortedSubWordFile[i]);
-            }    
-        }else{
-   
-        
-            //We should be the parent process, make another fork!
-            //printf("Creating a fork!\n");
-            pid = fork();
-            wait(0);
+            }  
+            exit(0);  
         }
     }
 
@@ -130,56 +109,57 @@ void map2(){
     }
 
     //Don't allow the main process to continue until we have no child processes running
-    while (wait(NULL) != -1 || errno != ECHILD); 
+    while (wait(NULL) != -1 || errno != ECHILD){
+        //printf("Waiting for children to finish\n");
+    } 
 
-  //reduce(wordCount, wordsInFileCount)
-
+  reduce(wordCount);
 }
 
 //Go through each file, grab the current index of that file and move to the merged array
 //Need to find the length of all the files
 
-void reduce(int wordCount[], int finalFileSize){ 
+void reduce(int wordCount[]){ 
     //Create a final file
     FILE *reducedFile;
     FILE *sortedSubWordFile[AMOUNT_OF_FILES];
-    int positionInFile[AMOUNT_OF_FILES] = {0};
+    int positionInFile[AMOUNT_OF_FILES];
+
     int finishedFileCount = 0;
+    char buffer[BUFFERSIZE];
 
-     //Init file
-     reducedFile = fopen("./Task2Final.txt", "w");
+    //Init file
+    reducedFile = fopen("./sortedmap2/Task2Final.txt", "w");
 
-    
     //Open all files again
     for(int i = 0; i < AMOUNT_OF_FILES; i++){
         char sortedSubWordFileName[BUFFERSIZE];
-        snprintf(sortedSubWordFileName, BUFFERSIZE, "./sortedmap2/%d.txt", i+2);
+        snprintf(sortedSubWordFileName, BUFFERSIZE, "./sortedmap2/%d.txt", i+3);
         sortedSubWordFile[i] = fopen(sortedSubWordFileName, "r");
+        positionInFile[i] = 0;
+        //printf("File being opened is: %s\n", sortedSubWordFileName);
     }
 
-    //Go through file 1
-    //Are we at the end?
-    //If not then append the array with the current line
-    
+    while(finishedFileCount < 13){
+        //Iterate through every file, grab the current line, if the line contains a word, put it into the file
         for(int j = 0; j< AMOUNT_OF_FILES; j++){
-            //If we aren't at the end of the file
-            //Copy in line
-            //Iterate positionInFile[j]
-            //finishedFileCount = 0;
-
-            //If we are at the end of the file
-            //finishedFileCount++
-
-            //If finishedFileCount == AMOUNT_OF_FILES
-            //end
-        }
-    
-
-    //
-    
-
-     
-
+            if(positionInFile[j] <= wordCount[j]){
+                char *s = fgets(buffer,sizeof(buffer),sortedSubWordFile[j]);
+                positionInFile[j]++;
+                //Reset finishedFileCount to 0 because we need all 13 files to be at the end 
+                finishedFileCount = 0;
+                if (s !=0) {
+                    fputs(s, reducedFile);
+                }
+            }else{
+                //Incrementing because we have finished using this file
+                if(finishedFileCount <= 13){
+                    finishedFileCount++;
+                }
+            }
+        }    
+    }
+    fclose(reducedFile);
 }
 
 //Sorting all these files from a single thread

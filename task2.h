@@ -14,6 +14,6 @@
 #include <errno.h>
 
 void map2();
-
+void reduce(int wordCount[]);
 
 #endif
