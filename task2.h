@@ -14,6 +14,7 @@
 #include <errno.h>
 
 void map2();
-void reduce(int wordCount[]);
+void reduce(int wordCount[], int totalLineCount);
+int findLowest( char *mergeStrings[], int positionInFile[], int wordCount[]);
 
 #endif

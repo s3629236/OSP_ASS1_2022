@@ -57,8 +57,15 @@ char** taskOneFilter(char* readFileLocation, char* cleanFileLocation){
     char **finalStringBuffer = malloc(sizeof(char *) * lineCounter(readFileLocation));
     char wordBuffer[BUFFER_SIZE];
     readFilePtr = fopen(readFileLocation,"r");
+    if (readFilePtr == NULL) {
+        perror("Failed to open readfile");
+        exit(0);
+    }
     cleanFilePtr = fopen(cleanFileLocation, "w");
-
+    if (cleanFilePtr == NULL) {
+        perror("Failed to create or open cleanfile");
+        exit(0);
+    }
 
     //Going through all lines of the original file
     while (fgets(wordBuffer, sizeof(wordBuffer), readFilePtr)) {    
@@ -100,6 +107,10 @@ char** taskOneFilter(char* readFileLocation, char* cleanFileLocation){
 
 int lineCounter(char* fileLocation){
     FILE* readFilePtr = fopen(fileLocation, "r");
+     if (readFilePtr == NULL) {
+        perror("Failed to open readfile when counting lines");
+        exit(0);
+    }
     int numberOfLines = 0;
     char newLineCharacter;
 

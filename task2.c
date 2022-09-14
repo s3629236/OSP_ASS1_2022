@@ -4,6 +4,8 @@ const int AMOUNT_OF_FORKS = 13;
 const int BUFFERSIZE = 500;
 int lineCounts[20];
 const int AMOUNT_OF_FILES = 13;
+const int characterToBeSortedOn = 0;
+
 
 void map2(){
 
@@ -24,6 +26,10 @@ void map2(){
         //Set filenames to be based on the amount of letters in the word
         snprintf(sortedSubWordFileName, BUFFERSIZE, "./sortedmap2/%d.txt", fileNumber);
         sortedSubWordFile[i] = fopen(sortedSubWordFileName, "w");
+        if (sortedSubWordFile[i]== NULL) {
+            perror("Failed to create a sub word file in task 2\n");
+            exit(0);
+        }
         sortStringBuffer[i] = malloc(sizeof(char *) * wordsInFileCount);
         wordCount[i] = 0;
         fileNumber++;
@@ -87,7 +93,7 @@ void map2(){
         }
     }
 
-
+    //TODO: Create timer here
     pid_t pid = getpid();
     for(int i = 0; i < AMOUNT_OF_FORKS; i++){
         //If we are the child process
@@ -101,7 +107,7 @@ void map2(){
             exit(0);  
         }
     }
-
+    //TODO: End timer here
 
     //closing all files 
     for(int i = 0; i < AMOUNT_OF_FILES; i++){
@@ -113,62 +119,85 @@ void map2(){
         //printf("Waiting for children to finish\n");
     } 
 
-  reduce(wordCount);
+  reduce(wordCount, wordsInFileCount);
 }
 
 //Go through each file, grab the current index of that file and move to the merged array
 //Need to find the length of all the files
 
-void reduce(int wordCount[]){ 
+void reduce(int wordCount[], int totalLineCount){ 
     //Create a final file
     FILE *reducedFile;
     FILE *sortedSubWordFile[AMOUNT_OF_FILES];
     int positionInFile[AMOUNT_OF_FILES];
 
-    int finishedFileCount = 0;
-    char buffer[BUFFERSIZE];
+    char *mergeStrings[AMOUNT_OF_FILES];
 
     //Init file
     reducedFile = fopen("./sortedmap2/Task2Final.txt", "w");
+    if (reducedFile == NULL) {
+        perror("Failed to create the final reduced text file for task 2\n");
+        exit(0);
+    }
 
     //Open all files again
     for(int i = 0; i < AMOUNT_OF_FILES; i++){
         char sortedSubWordFileName[BUFFERSIZE];
         snprintf(sortedSubWordFileName, BUFFERSIZE, "./sortedmap2/%d.txt", i+3);
         sortedSubWordFile[i] = fopen(sortedSubWordFileName, "r");
-        positionInFile[i] = 0;
-        //printf("File being opened is: %s\n", sortedSubWordFileName);
-    }
+        if (sortedSubWordFile[i] == NULL) {
+            perror("Failed to read a subword file while reducing\n");
+            exit(0);
+        }
+    }   
+
+ 
+    int ignoreFile[AMOUNT_OF_FILES];
+        for(int j = 0; j< AMOUNT_OF_FILES; j++){
+            mergeStrings[j] = malloc(sizeof(char*) * (j+3));
+            fgets(mergeStrings[j],sizeof(char*) * (j+3),sortedSubWordFile[j]);
+            positionInFile[j] = 0;
+            ignoreFile[j] = 0;
+        }    
+
+
+int finishedFileCount = 0;
+
 
     while(finishedFileCount < 13){
-        //Iterate through every file, grab the current line, if the line contains a word, put it into the file
+        char min = '~';
+        int index = 0;
+        //Iterate through every file, if this is the min word, then use this one
         for(int j = 0; j< AMOUNT_OF_FILES; j++){
-            if(positionInFile[j] <= wordCount[j]){
-                char *s = fgets(buffer,sizeof(buffer),sortedSubWordFile[j]);
-                positionInFile[j]++;
-                //Reset finishedFileCount to 0 because we need all 13 files to be at the end 
-                finishedFileCount = 0;
-                if (s !=0) {
-                    fputs(s, reducedFile);
-                }
-            }else{
-                //Incrementing because we have finished using this file
-                if(finishedFileCount <= 13){
-                    finishedFileCount++;
-                }
-            }
+            if((mergeStrings[j][characterToBeSortedOn] < min) && (ignoreFile[j] == 0)){
+                //printf("The third character of %s is %d, which should be lower than %d\n", mergeStrings[j], mergeStrings[j][2], min);
+                min = mergeStrings[j][characterToBeSortedOn];
+                index = j;
+            }                
         }    
+        //Add the lowest alphabetical string to reduce file
+        
+        if(positionInFile[index] < wordCount[index]){
+            //printf("Putting into file: %s", mergeStrings[index]);
+            fputs(mergeStrings[index], reducedFile);
+        }
+
+        if(positionInFile[index] < wordCount[index]){
+            fgets(mergeStrings[index],sizeof(char*) * (index+3),sortedSubWordFile[index]);
+            positionInFile[index]++;
+        }
+        else{
+            ignoreFile[index] = 1;
+            finishedFileCount++;
+        }
+
     }
+
     fclose(reducedFile);
-}
-
-//Sorting all these files from a single thread
-void singleThread(){
-
 }
 
 
 
 //Only run printf statements if passing the -DVERBOSE flag when compiling
 #ifdef VERBOSE
-#endif
+#endif 
