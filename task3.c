@@ -1,72 +1,41 @@
  #include "task3.h"
 const int THREAD_COUNT = 13;
 const int BUFFERCOUNT = 500;
-// /*
-// Task 3: Threads using FIFO files
-// Here, we use FIFO files to transfer the data from map3() to threaded_sort(). Specifically
-
-// •
-// The main program calls the filter function to clean the data. The function will return a global string array of valid
-// words. then main() creates both the map3() and threaded_sort() threads.
-
-// The map3() function creates 13 index arrays and threads, one for each word length, indexing into the main string
-// array. So if the global array contained [ “air”, ”airbag”, ”and” ] an index array had [1,3,…] then global[index[0]] is
-// ‘air’, global[index[1]] = ‘and’.
-// Global[] is only ever read by map before the threads, and only thread3 reads index3[]. Since no word can be two
-// lengths at the same time, there will never be a conflict between threads .
-// Having created the mapping, map3() now creates 13 threads. Each thread uses the C function qsort() to perform
-// the same sort as before – on the third letter onwards – and when done, it creates 13 FIFO files opened for write
-// and each thread will then output words to their corresponding file.
-// In this case, the threaded_sort() function will wait, and then read those same 13 files, one line at a time in sort order.
-// a. Note that an efficient way to sort is to swap indexes or pointers in the compare instead of swapping
-// strings.
-// This should produce the same file as Task2 (and Task 1 – after sorting ) (ignoring chars 1,2).
-// This should produce the same file as Task2 (and Task 1 – after sorting. ) (ignoring chars 1,2).
-// At the end, each thread opens a FIFO file for writing, and dumps the global strings in sorted index order.
-// threaded_sort() should keep a count of words for each thread.
-// Meanwhile, threaded_sort() needs only to perform the reduction merge step. It waits for each map3() thread to signal
-// its completion. When all are done, threaded_sort() will open all 13 FIFO files for read, and perform the merge step as in
-// Task2,
-// a. Note that it may be necessary to set up all FIFO files before anything is read, as a FIFO open for read has to
-// be created before an open for write. Thus this ‘wiring’ can be done in main() before the threads are
-// created, and they inherit their files.
-// At the end, task3 should output the word counts for each word length. Also present these as a percentage (for
-// example 8% were words of length 10)
-
-// Report: Compare performance. Consider where the time was saved or lost.*/
+    clock_t start3, end3;
+    double cpu_time_used3;
 
 
 struct args{
     char ** sortStringBuffer;
     int length;
-    int wordLength;
+    int fileNumber;
+    char *filePath;
 };
 
 void map3(char *dirtyFile, char *cleanFile){
 
-
-
     char** validWords = taskOneFilter(dirtyFile, cleanFile);
-    FILE *sortedSubWordFile[THREAD_COUNT];
-    int wordCount[THREAD_COUNT];
-    
-
-    //separate the words list into separate lists, one with words of length 3, the next of length 4, to 15.
+    start3 = clock();
+    //Final count of words in a buffer (words of 3 to 15 length)
+    int wordCount[THREAD_COUNT]; 
+    //Final count of all words from source file   
     int wordsInFileCount = lineCounter(cleanFile);
 
+    //Sorted strings that have been split into their own buffer
     char **sortStringBuffer[THREAD_COUNT];
+    //Used for naming the files
     int fileNumber = 3;
+    //Paths of all files so we can pass them in with threads
 
     //Initialising all files and buffers
     for(int i = 0; i < THREAD_COUNT; i++){
         char sortedSubWordFileName[BUFFERCOUNT];
-        //Set filenames to be based on the amount of letters in the word
-        snprintf(sortedSubWordFileName, BUFFERCOUNT, "./sortedmap3/%d.txt", fileNumber);
-        sortedSubWordFile[i] = fopen(sortedSubWordFileName, "w");
-        if (sortedSubWordFile[i] == NULL) {
-            perror("Failed to create a subword file before mapping in Task 3\n");
-            exit(0);
-        }
+
+        snprintf(sortedSubWordFileName, BUFFERCOUNT, "./sortedmap3/%d.txt", i+3);
+
+        if(mkfifo(sortedSubWordFileName, 0777) == -1){
+            perror("Failed to create fifo, file already exists");
+    }
         sortStringBuffer[i] = malloc(sizeof(char *) * wordsInFileCount);
         wordCount[i] = 0;
         fileNumber++;
@@ -130,57 +99,82 @@ void map3(char *dirtyFile, char *cleanFile){
         }
     }
 
-    //closing all files 
-    for(int i = 0; i < THREAD_COUNT; i++){
-        fclose(sortedSubWordFile[i]);
-    }
-    //TODO: Create the timer here
-    //0777 is full read and write permission
-    //mkfifo(name, 0777);
 
-    pthread_t thread[THREAD_COUNT]; 
+    //TODO: Create the timer here
+
+
+    pthread_t mapThread[THREAD_COUNT]; 
+    pthread_t reduceThread[THREAD_COUNT]; 
     //Create a global array
     for(int i = 0; i < THREAD_COUNT; i++){
-        struct args *thread_arguments = (struct args *)malloc(sizeof(struct args));
-        struct args* return_args;
-        thread_arguments->sortStringBuffer = sortStringBuffer[i];
-        thread_arguments->length = wordCount[i];
+        struct args *thread_args = (struct args *)malloc(sizeof(struct args));
+
+        char *filePath = malloc(sizeof(char*) * 20);
+        thread_args->sortStringBuffer = sortStringBuffer[i];
+        thread_args->length = wordCount[i];
         //Magic number here as we are counting the offset only, this won't change
-        thread_arguments->wordLength = i+3;
+        thread_args->fileNumber = i+3;
 
+    
+        snprintf(filePath, BUFFERCOUNT, "./sortedmap3/%d.txt", i+3);
+        thread_args->filePath = filePath;
 
-        if(pthread_create(&thread[i], NULL, &threaded_sort, (void *)thread_arguments)!=0){
+        if(pthread_create(&reduceThread[i], NULL, &reduce3, (void *)thread_args)!=0){
             //Error occured
-            printf("Error occured creating a thread\n");
+            printf("Error occured creating sort thread %d\n", i);
+            exit(0);
+        }
+
+        if(pthread_create(&mapThread[i], NULL, &threaded_sort, (void *)thread_args)!=0){
+            //Error occured
+            printf("Error occured creating sort thread %d\n", i);
             exit(0);
         }
         //LAST null on join is the return value
-        if(pthread_join(thread[i], (void**)&return_args)!= 0){
+        if(pthread_join(mapThread[i], NULL)!= 0){
             //Error occured
-            printf("Error occured joining thread %d\n", i);
+            printf("Error occured joining sort thread %d\n", i);
+            exit(0);
+        }
+        if(pthread_join(reduceThread[i], NULL)!= 0){
+            //Error occured
+            printf("Error occured joining sort thread %d\n", i);
             exit(0);
         }
     }
-
     //TODO: End timer here
-
+    end3 = clock();
+    cpu_time_used3 = ((double) (end3 - start3)) / CLOCKS_PER_SEC;
+    printf("Task 3 took: %f and cpu time used is %f\n",(double)(end3 - start3), cpu_time_used3);
 }
 
-
-//Pass the arguments in, set a temporary struct, sort that struct and then return
+//Pass the arguments in, set a temporary struct, sort that struct, write to a file
 void *threaded_sort(void *threadarg){
+    struct args *thread_args = (struct args *)threadarg;
 
-    struct args *thread_arguments = (struct args *)threadarg;
-    printf("Thread has word count of: %d\n", ((struct args*)threadarg)->length);
-    qsort((*thread_arguments).sortStringBuffer, (*thread_arguments).length, sizeof(char*), compareString);
-        for(int i = 0; i < thread_arguments->length; i++){
-        fputs(thread_arguments->sortStringBuffer[i], cleanFilePtr);
+    printf("Reached a thread\n");
+    int fileDescriptor = open(thread_args->filePath, O_WRONLY);
+    if(fileDescriptor == -1){
+        printf("Failed to open fifo file: %d\n", thread_args->fileNumber);
     }
-    return ((void*)thread_arguments);
+    printf("Managed to open file\n");
+    qsort((*thread_args).sortStringBuffer, (*thread_args).length, sizeof(char*), compareString);
+    for(int i = 0; i < thread_args->length; i++){
+        if( write(fileDescriptor, thread_args->sortStringBuffer[i], sizeof(char*) * thread_args->fileNumber) == -1){
+            printf("Failed to write to file %d: %s", thread_args->fileNumber, thread_args->sortStringBuffer[i]);
+        }
+    }
+    close(fileDescriptor);
+    return ((void*)thread_args);
 }
 
-void reduce3(){
-
+void *reduce3(void *threadarg){
+    struct args *thread_args = (struct args *)threadarg;
+    //We need a filePath to open as write
+    //We need a length to know the size of the file
+    //
+    printf("Hit reduce thread\n");
+    return ((void*)thread_args);
 }
 
 

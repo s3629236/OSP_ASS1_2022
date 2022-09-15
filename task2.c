@@ -5,20 +5,19 @@ const int BUFFERSIZE = 500;
 int lineCounts[20];
 const int AMOUNT_OF_FILES = 13;
 const int characterToBeSortedOn = 0;
+clock_t start2, end2;
+double cpu_time_used2;
 
 
 void map2(){
-
+    //Get global array
     char** validWords = taskOneFilter("tester.txt", "CTask1.txt");
     FILE *sortedSubWordFile[AMOUNT_OF_FILES];
     int wordCount[AMOUNT_OF_FILES];
-    
-
-    //separate the words list into separate lists, one with words of length 3, the next of length 4, to 15.
     int wordsInFileCount = lineCounter("./CTask1.txt");
-
     char **sortStringBuffer[AMOUNT_OF_FILES];
     int fileNumber = 3;
+    start2 = clock();
 
     //Initialising all files and buffers
     for(int i = 0; i < AMOUNT_OF_FILES; i++){
@@ -120,6 +119,9 @@ void map2(){
     } 
 
   reduce(wordCount, wordsInFileCount);
+  end2 = clock();
+  cpu_time_used2 = ((double) (end2 - start2)) / CLOCKS_PER_SEC;
+  printf("Task 2 took: %f and cpu time used is %f\n",(double)(end2-start2), cpu_time_used2);
 }
 
 //Go through each file, grab the current index of that file and move to the merged array

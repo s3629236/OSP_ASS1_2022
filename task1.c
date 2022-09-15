@@ -6,6 +6,8 @@ const int BUFFER_SIZE = 500;
 const char *regexPattern = "[a-zA-Z&-]*";
 int counter = 0;
 int finalCounter = 0;
+clock_t start1, end1;
+double cpu_time_used;
 
 void printContents(char** array, int size){
     for (int i = 0; i < size; i++){
@@ -48,6 +50,7 @@ int compareString( const void *str1, const void *str2 )
 }
 
 char** taskOneFilter(char* readFileLocation, char* cleanFileLocation){
+    start1 = clock();
     //Open File
     FILE *readFilePtr;
     FILE *cleanFilePtr;
@@ -101,6 +104,9 @@ char** taskOneFilter(char* readFileLocation, char* cleanFileLocation){
     }
     fclose(readFilePtr);
     fclose(cleanFilePtr);
+    end1 = clock();
+    cpu_time_used = ((double) (end1 - start1)) / CLOCKS_PER_SEC;
+    printf("Task 1 took: %f and cpu time used is %f\n",(double)(end1-start1), cpu_time_used);
     return finalStringBuffer;
 }
 
